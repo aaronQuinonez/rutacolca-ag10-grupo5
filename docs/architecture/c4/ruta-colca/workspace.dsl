@@ -23,8 +23,10 @@ workspace "RutaColca" "Modelo C4 de RutaColca - Aarón Fernando Quiñonez Delgad
         ruta = softwareSystem "RutaColca" "Plataforma del consorcio donde las agencias publican tours y los turistas los reservan y pagan en línea." {
             web = container "Web del turista" "Búsqueda de tours, reserva de una salida, registro del boleto turístico y pago." "React (SPA)" "WebBrowser"
             portal = container "Portal de agencias" "Publicación de tours, fechas y cupos; reservas presenciales; aprobación de agencias y reportes de ventas." "React (PWA)" "WebBrowser"
-            api = container "API de RutaColca" "Reglas de negocio: tours, cupos, reservas, validación del boleto, cobro y envío de itinerarios." "Java 21, Spring Boot"
-            bd = container "Base de datos" "Agencias, tours, salidas, cupos, reservas y ventas. No guarda datos de tarjetas." "PostgreSQL 16" "Almacen"
+            api = container "API de RutaColca" "Reglas de negocio: tours, cupos, reservas, validación diferida del boleto, cobro y envío de itinerarios." "Java 21, Spring Boot" {
+                workerAutocolca = component "Worker de validación diferida" "Reintenta asíncronamente las validaciones pendientes contra AUTOCOLCA con backoff exponencial y orquesta cobros (ADR-005)" "Spring Boot @Scheduled / ShedLock"
+            }
+            bd = container "Base de datos" "Agencias, tours, salidas, cupos, reservas, ventas y cola de validaciones diferidas (cola_validacion_boletos / Transactional Outbox). No guarda datos de tarjetas." "PostgreSQL 16" "Almacen"
             // Reto HU-05 (Paso 8)
             cache = container "Almacén local sin conexión" "Reservas presenciales pendientes de sincronizar, guardadas en el dispositivo de la agencia." "IndexedDB (navegador)" "Almacen,Reto"
         }
@@ -42,9 +44,13 @@ workspace "RutaColca" "Modelo C4 de RutaColca - Aarón Fernando Quiñonez Delgad
         ruta.web -> ruta.api "Consulta tours y envía reservas a" "JSON/HTTPS"
         ruta.portal -> ruta.api "Gestiona tours, cupos y reservas en" "JSON/HTTPS"
         ruta.api -> ruta.bd "Lee y escribe datos en" "JDBC"
+        ruta.api -> ruta.bd "Persiste reservas pendientes y encola tareas en cola_validacion_boletos en" "JDBC"
+        ruta.api.workerAutocolca -> ruta.bd "Consulta tareas pendientes (SKIP LOCKED) y actualiza estado de reservas en" "JDBC"
 
         ruta.api -> pasarela "Cobra las reservas en" "HTTPS"
         ruta.api -> autocolca "Valida el boleto turístico en" "HTTPS"
+        ruta.api.workerAutocolca -> autocolca "Reintenta validación diferida de boletos en" "JSON/HTTPS"
+        autocolca -> ruta.api "Retorna estado y vigencia del boleto turístico a" "HTTPS"
         ruta.api -> whatsapp "Envía itinerarios y listas de grupo mediante" "HTTPS"
         whatsapp -> guia "Entrega el itinerario y la lista del grupo a" "WhatsApp"
 
@@ -110,6 +116,21 @@ workspace "RutaColca" "Modelo C4 de RutaColca - Aarón Fernando Quiñonez Delgad
             autolayout lr
         }
 
+        dynamic ruta "ValidacionBoletoDiferida" "Validación asíncrona de boletos turísticos ante caída de AUTOCOLCA (Escenario E5 - ADR-005)" {
+            title "Diagrama dinámico: validación diferida de boletos ante caída de AUTOCOLCA (Escenario E5)"
+            turista -> ruta.web "1. Envía solicitud de reserva con número de boleto turístico"
+            ruta.web -> ruta.api "2. Envía la reserva para validación y procesamiento"
+            ruta.api -> autocolca "3. Intenta validar con AUTOCOLCA y detecta indisponibilidad (timeout / falla 5xx)"
+            ruta.api -> ruta.bd "4. Reserva temporalmente el cupo (TTL 2h) y registra la validación en estado diferido (cola_validacion_boletos)"
+            ruta.api -> ruta.web "5. Responde confirmando recepción en estado 'Pendiente de validación' (sin cobro monetario)"
+            ruta.api -> autocolca "6. Worker de validación diferida de la API reintenta periódicamente contra AUTOCOLCA con backoff exponencial"
+            autocolca -> ruta.api "7. Valida exitosamente el boleto turístico tras restablecimiento del servicio"
+            ruta.api -> ruta.bd "8. Actualiza la reserva a estado VALIDADO y consolida el cupo"
+            ruta.api -> pasarela "9. Ejecuta el cobro de la reserva confirmada en la pasarela (asegurando 0 cobros a boletos no válidos)"
+            ruta.api -> whatsapp "10. Envía itinerario y confirmación de reserva al turista"
+            autolayout lr
+        }
+
         deployment ruta "Produccion" "DespliegueProduccion" "Nodos e instancias de contenedor en el entorno de producción" {
             title "Diagrama de despliegue de RutaColca en producción"
             include *
@@ -128,6 +149,10 @@ workspace "RutaColca" "Modelo C4 de RutaColca - Aarón Fernando Quiñonez Delgad
             }
             element "Container" {
                 background #0E7D73
+                color #ffffff
+            }
+            element "Component" {
+                background #1D9A81
                 color #ffffff
             }
             element "WebBrowser" {
