@@ -1,0 +1,120 @@
+@startuml
+set separator none
+title Diagrama de despliegue de RutaColca en producción
+
+left to right direction
+
+skinparam {
+  arrowFontSize 10
+  defaultTextAlignment center
+  wrapWidth 200
+  maxMessageSize 100
+}
+
+hide stereotype
+
+skinparam rectangle<<Produccion.Proveedorcloud.VMUbuntu2404x2.Docker.APIdeRutaColca_1>> {
+  BackgroundColor #0e7d73
+  FontColor #ffffff
+  BorderColor #095750
+  shadowing false
+}
+skinparam database<<Produccion.TabletoPCdelaagencia.Almacénlocalsinconexión_1>> {
+  BackgroundColor #b25e00
+  FontColor #ffffff
+  BorderColor #7c4100
+  shadowing false
+}
+skinparam rectangle<<Produccion.Proveedorcloud.Balanceadordecarga>> {
+  BackgroundColor #dddddd
+  FontColor #000000
+  BorderColor #9a9a9a
+  shadowing false
+}
+skinparam database<<Produccion.Proveedorcloud.PostgreSQLgestionado.Basededatos_1>> {
+  BackgroundColor #0e7d73
+  FontColor #ffffff
+  BorderColor #095750
+  shadowing false
+}
+skinparam rectangle<<Produccion.Celulardelturista>> {
+  BackgroundColor #ffffff
+  FontColor #000000
+  BorderColor #888888
+  shadowing false
+}
+skinparam rectangle<<Produccion.Proveedorcloud.VMUbuntu2404x2.Docker>> {
+  BackgroundColor #ffffff
+  FontColor #000000
+  BorderColor #888888
+  shadowing false
+}
+skinparam rectangle<<Produccion.TabletoPCdelaagencia.Portaldeagencias_1>> {
+  BackgroundColor #0e7d73
+  FontColor #ffffff
+  BorderColor #095750
+  shadowing false
+}
+skinparam rectangle<<Produccion.Proveedorcloud.PostgreSQLgestionado>> {
+  BackgroundColor #ffffff
+  FontColor #000000
+  BorderColor #888888
+  shadowing false
+}
+skinparam rectangle<<Produccion.Proveedorcloud>> {
+  BackgroundColor #ffffff
+  FontColor #000000
+  BorderColor #888888
+  shadowing false
+}
+skinparam rectangle<<Produccion.TabletoPCdelaagencia>> {
+  BackgroundColor #ffffff
+  FontColor #000000
+  BorderColor #888888
+  shadowing false
+}
+skinparam rectangle<<Produccion.Proveedorcloud.VMUbuntu2404x2>> {
+  BackgroundColor #ffffff
+  FontColor #000000
+  BorderColor #888888
+  shadowing false
+}
+skinparam rectangle<<Produccion.Celulardelturista.Webdelturista_1>> {
+  BackgroundColor #0e7d73
+  FontColor #ffffff
+  BorderColor #095750
+  shadowing false
+}
+
+rectangle "Celular del turista\n<size:10>[Deployment Node: Navegador web]</size>" <<Produccion.Celulardelturista>> as Produccion.Celulardelturista {
+  rectangle "==Web del turista\n<size:10>[Container: React (SPA)]</size>\n\nBúsqueda de tours, reserva de una salida, registro del boleto turístico y pago." <<Produccion.Celulardelturista.Webdelturista_1>> as Produccion.Celulardelturista.Webdelturista_1
+}
+
+rectangle "Tablet o PC de la agencia\n<size:10>[Deployment Node: Navegador web con PWA instalada]</size>" <<Produccion.TabletoPCdelaagencia>> as Produccion.TabletoPCdelaagencia {
+  rectangle "==Portal de agencias\n<size:10>[Container: React (PWA)]</size>\n\nPublicación de tours, fechas y cupos; reservas presenciales; aprobación de agencias y reportes de ventas." <<Produccion.TabletoPCdelaagencia.Portaldeagencias_1>> as Produccion.TabletoPCdelaagencia.Portaldeagencias_1
+  database "==Almacén local sin conexión\n<size:10>[Container: IndexedDB (navegador)]</size>\n\nReservas presenciales pendientes de sincronizar, guardadas en el dispositivo de la agencia." <<Produccion.TabletoPCdelaagencia.Almacénlocalsinconexión_1>> as Produccion.TabletoPCdelaagencia.Almacénlocalsinconexión_1
+}
+
+rectangle "Proveedor cloud\n<size:10>[Deployment Node: Región del proveedor]</size>" <<Produccion.Proveedorcloud>> as Produccion.Proveedorcloud {
+  rectangle "==Balanceador de carga\n<size:10>[Infrastructure Node: HTTPS (TLS)]</size>\n\nTermina TLS y reparte el tráfico entre las réplicas de la API." <<Produccion.Proveedorcloud.Balanceadordecarga>> as Produccion.Proveedorcloud.Balanceadordecarga
+  rectangle "VM Ubuntu 24.04 (x2)\n<size:10>[Deployment Node: Ubuntu 24.04]</size>" <<Produccion.Proveedorcloud.VMUbuntu2404x2>> as Produccion.Proveedorcloud.VMUbuntu2404x2 {
+    rectangle "Docker\n<size:10>[Deployment Node: Docker]</size>" <<Produccion.Proveedorcloud.VMUbuntu2404x2.Docker>> as Produccion.Proveedorcloud.VMUbuntu2404x2.Docker {
+      rectangle "==API de RutaColca\n<size:10>[Container: Java 21, Spring Boot]</size>\n\nReglas de negocio: tours, cupos, reservas, validación diferida del boleto, cobro y envío de itinerarios." <<Produccion.Proveedorcloud.VMUbuntu2404x2.Docker.APIdeRutaColca_1>> as Produccion.Proveedorcloud.VMUbuntu2404x2.Docker.APIdeRutaColca_1
+    }
+
+  }
+
+  rectangle "PostgreSQL gestionado\n<size:10>[Deployment Node: PostgreSQL 16]</size>" <<Produccion.Proveedorcloud.PostgreSQLgestionado>> as Produccion.Proveedorcloud.PostgreSQLgestionado {
+    database "==Base de datos\n<size:10>[Container: PostgreSQL 16]</size>\n\nAgencias, tours, salidas, cupos, reservas, ventas y cola de validaciones diferidas (cola_validacion_boletos / Transactional Outbox). No guarda datos de tarjetas." <<Produccion.Proveedorcloud.PostgreSQLgestionado.Basededatos_1>> as Produccion.Proveedorcloud.PostgreSQLgestionado.Basededatos_1
+  }
+
+}
+
+Produccion.TabletoPCdelaagencia.Portaldeagencias_1 .[#b25e00,thickness=2].> Produccion.TabletoPCdelaagencia.Almacénlocalsinconexión_1 : "<color:#b25e00>Guarda reservas pendientes en\n<color:#b25e00><size:8>[API IndexedDB]</size>"
+Produccion.Celulardelturista.Webdelturista_1 .[#707070,thickness=2].> Produccion.Proveedorcloud.VMUbuntu2404x2.Docker.APIdeRutaColca_1 : "<color:#707070>Consulta tours y envía reservas a\n<color:#707070><size:8>[JSON/HTTPS]</size>"
+Produccion.TabletoPCdelaagencia.Portaldeagencias_1 .[#707070,thickness=2].> Produccion.Proveedorcloud.VMUbuntu2404x2.Docker.APIdeRutaColca_1 : "<color:#707070>Gestiona tours, cupos y reservas en\n<color:#707070><size:8>[JSON/HTTPS]</size>"
+Produccion.TabletoPCdelaagencia.Portaldeagencias_1 .[#b25e00,thickness=2].> Produccion.Proveedorcloud.VMUbuntu2404x2.Docker.APIdeRutaColca_1 : "<color:#b25e00>Sincroniza las reservas hechas sin conexión con\n<color:#b25e00><size:8>[JSON/HTTPS]</size>"
+Produccion.Proveedorcloud.VMUbuntu2404x2.Docker.APIdeRutaColca_1 .[#707070,thickness=2].> Produccion.Proveedorcloud.PostgreSQLgestionado.Basededatos_1 : "<color:#707070>Lee y escribe datos en\n<color:#707070><size:8>[JDBC]</size>"
+Produccion.Proveedorcloud.VMUbuntu2404x2.Docker.APIdeRutaColca_1 .[#707070,thickness=2].> Produccion.Proveedorcloud.PostgreSQLgestionado.Basededatos_1 : "<color:#707070>Persiste reservas pendientes y encola tareas en cola_validacion_boletos en\n<color:#707070><size:8>[JDBC]</size>"
+Produccion.Proveedorcloud.Balanceadordecarga .[#707070,thickness=2].> Produccion.Proveedorcloud.VMUbuntu2404x2.Docker.APIdeRutaColca_1 : "<color:#707070>Reparte el tráfico HTTPS hacia\n<color:#707070><size:8>[HTTPS]</size>"
+@enduml

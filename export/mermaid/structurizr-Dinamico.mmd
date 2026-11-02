@@ -1,0 +1,32 @@
+graph LR
+  linkStyle default fill:#ffffff
+
+  subgraph diagram ["Diagrama dinámico: reservar y pagar un tour (HU-02 y HU-03)"]
+    style diagram fill:#ffffff,stroke:#ffffff
+
+    subgraph 5 ["RutaColca"]
+      style 5 fill:#ffffff,stroke:#124161,color:#124161
+
+      10[("<div style='font-weight: bold'>Base de datos</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL 16]</div><div style='font-size: 80%; margin-top:10px'>Agencias, tours, salidas,<br />cupos, reservas, ventas y<br />cola de validaciones<br />diferidas<br />(cola_validacion_boletos /<br />Transactional Outbox). No<br />guarda datos de tarjetas.</div>")]
+      style 10 fill:#0e7d73,stroke:#095750,color:#ffffff
+      6["<div style='font-weight: bold'>Web del turista</div><div style='font-size: 70%; margin-top: 0px'>[Container: React (SPA)]</div><div style='font-size: 80%; margin-top:10px'>Búsqueda de tours, reserva de<br />una salida, registro del<br />boleto turístico y pago.</div>"]
+      style 6 fill:#0e7d73,stroke:#095750,color:#ffffff
+      8["<div style='font-weight: bold'>API de RutaColca</div><div style='font-size: 70%; margin-top: 0px'>[Container: Java 21, Spring Boot]</div><div style='font-size: 80%; margin-top:10px'>Reglas de negocio: tours,<br />cupos, reservas, validación<br />diferida del boleto, cobro y<br />envío de itinerarios.</div>"]
+      style 8 fill:#0e7d73,stroke:#095750,color:#ffffff
+    end
+
+    1["<div style='font-weight: bold'>Turista</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Visitante que busca tours al<br />valle del Colca, reserva una<br />salida y la paga en línea.</div>"]
+    style 1 fill:#0b3d62,stroke:#072a44,color:#ffffff
+    12["<div style='font-weight: bold'>Pasarela de pagos</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Procesa pagos con tarjeta y<br />billetera móvil; custodia los<br />datos de tarjeta.</div>"]
+    style 12 fill:#8c8c8c,stroke:#626262,color:#ffffff
+    14["<div style='font-weight: bold'>Sistema de AUTOCOLCA</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Emite y valida el boleto<br />turístico del Colca (supuesto<br />didáctico: API HTTPS).</div>"]
+    style 14 fill:#8c8c8c,stroke:#626262,color:#ffffff
+
+    1-. "<div>1. Elige la salida, registra<br />su boleto y confirma el pago</div><div style='font-size: 70%'>[HTTPS]</div>" .->6
+    6-. "<div>2. Envía la reserva y el<br />número de boleto</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->8
+    8-. "<div>3. Valida el boleto turístico</div><div style='font-size: 70%'>[HTTPS]</div>" .->14
+    8-. "<div>4. Verifica y retiene el cupo<br />de la salida</div><div style='font-size: 70%'>[JDBC]</div>" .->10
+    8-. "<div>5. Cobra el monto de la<br />reserva</div><div style='font-size: 70%'>[HTTPS]</div>" .->12
+    8-. "<div>6. Confirma y guarda la<br />reserva</div><div style='font-size: 70%'>[JDBC]</div>" .->10
+    8-. "<div>7. Devuelve la confirmación</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->6
+  end

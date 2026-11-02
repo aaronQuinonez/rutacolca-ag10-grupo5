@@ -1,0 +1,37 @@
+graph LR
+  linkStyle default fill:#ffffff
+
+  subgraph diagram ["Diagrama dinámico: validación diferida de boletos ante caída de AUTOCOLCA (Escenario E5)"]
+    style diagram fill:#ffffff,stroke:#ffffff
+
+    subgraph 5 ["RutaColca"]
+      style 5 fill:#ffffff,stroke:#124161,color:#124161
+
+      10[("<div style='font-weight: bold'>Base de datos</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL 16]</div><div style='font-size: 80%; margin-top:10px'>Agencias, tours, salidas,<br />cupos, reservas, ventas y<br />cola de validaciones<br />diferidas<br />(cola_validacion_boletos /<br />Transactional Outbox). No<br />guarda datos de tarjetas.</div>")]
+      style 10 fill:#0e7d73,stroke:#095750,color:#ffffff
+      6["<div style='font-weight: bold'>Web del turista</div><div style='font-size: 70%; margin-top: 0px'>[Container: React (SPA)]</div><div style='font-size: 80%; margin-top:10px'>Búsqueda de tours, reserva de<br />una salida, registro del<br />boleto turístico y pago.</div>"]
+      style 6 fill:#0e7d73,stroke:#095750,color:#ffffff
+      8["<div style='font-weight: bold'>API de RutaColca</div><div style='font-size: 70%; margin-top: 0px'>[Container: Java 21, Spring Boot]</div><div style='font-size: 80%; margin-top:10px'>Reglas de negocio: tours,<br />cupos, reservas, validación<br />diferida del boleto, cobro y<br />envío de itinerarios.</div>"]
+      style 8 fill:#0e7d73,stroke:#095750,color:#ffffff
+    end
+
+    1["<div style='font-weight: bold'>Turista</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Visitante que busca tours al<br />valle del Colca, reserva una<br />salida y la paga en línea.</div>"]
+    style 1 fill:#0b3d62,stroke:#072a44,color:#ffffff
+    12["<div style='font-weight: bold'>Pasarela de pagos</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Procesa pagos con tarjeta y<br />billetera móvil; custodia los<br />datos de tarjeta.</div>"]
+    style 12 fill:#8c8c8c,stroke:#626262,color:#ffffff
+    13["<div style='font-weight: bold'>WhatsApp Business</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Entrega mensajes al celular<br />de los guías.</div>"]
+    style 13 fill:#8c8c8c,stroke:#626262,color:#ffffff
+    14["<div style='font-weight: bold'>Sistema de AUTOCOLCA</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Emite y valida el boleto<br />turístico del Colca (supuesto<br />didáctico: API HTTPS).</div>"]
+    style 14 fill:#8c8c8c,stroke:#626262,color:#ffffff
+
+    1-. "<div>1. 1. Envía solicitud de<br />reserva con número de boleto<br />turístico</div><div style='font-size: 70%'>[HTTPS]</div>" .->6
+    6-. "<div>2. 2. Envía la reserva para<br />validación y procesamiento</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->8
+    8-. "<div>3. 3. Intenta validar con<br />AUTOCOLCA y detecta<br />indisponibilidad (timeout /<br />falla 5xx)</div><div style='font-size: 70%'>[HTTPS]</div>" .->14
+    8-. "<div>4. 4. Reserva temporalmente<br />el cupo (TTL 2h) y registra<br />la validación en estado<br />diferido<br />(cola_validacion_boletos)</div><div style='font-size: 70%'>[JDBC]</div>" .->10
+    8-. "<div>5. 5. Responde confirmando<br />recepción en estado<br />'Pendiente de validación'<br />(sin cobro monetario)</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->6
+    8-. "<div>6. 6. Worker de validación<br />diferida de la API reintenta<br />periódicamente contra<br />AUTOCOLCA con backoff<br />exponencial</div><div style='font-size: 70%'>[HTTPS]</div>" .->14
+    14-. "<div>7. 7. Valida exitosamente el<br />boleto turístico tras<br />restablecimiento del servicio</div><div style='font-size: 70%'>[HTTPS]</div>" .->8
+    8-. "<div>8. 8. Actualiza la reserva a<br />estado VALIDADO y consolida<br />el cupo</div><div style='font-size: 70%'>[JDBC]</div>" .->10
+    8-. "<div>9. 9. Ejecuta el cobro de la<br />reserva confirmada en la<br />pasarela (asegurando 0 cobros<br />a boletos no válidos)</div><div style='font-size: 70%'>[HTTPS]</div>" .->12
+    8-. "<div>10. 10. Envía itinerario y<br />confirmación de reserva al<br />turista</div><div style='font-size: 70%'>[HTTPS]</div>" .->13
+  end

@@ -1,0 +1,82 @@
+@startuml
+set separator none
+title Diagrama de contexto de RutaColca
+
+left to right direction
+
+skinparam {
+  arrowFontSize 10
+  defaultTextAlignment center
+  wrapWidth 200
+  maxMessageSize 100
+}
+
+hide stereotype
+
+skinparam person<<Administradordelconsorcio>> {
+  BackgroundColor #0b3d62
+  FontColor #ffffff
+  BorderColor #072a44
+  shadowing false
+}
+skinparam person<<Guíadeturismo>> {
+  BackgroundColor #0b3d62
+  FontColor #ffffff
+  BorderColor #072a44
+  shadowing false
+}
+skinparam person<<Operadordeagencia>> {
+  BackgroundColor #0b3d62
+  FontColor #ffffff
+  BorderColor #072a44
+  shadowing false
+}
+skinparam rectangle<<Pasareladepagos>> {
+  BackgroundColor #8c8c8c
+  FontColor #ffffff
+  BorderColor #626262
+  shadowing false
+}
+skinparam rectangle<<RutaColca>> {
+  BackgroundColor #1b5e8b
+  FontColor #ffffff
+  BorderColor #124161
+  shadowing false
+}
+skinparam rectangle<<SistemadeAUTOCOLCA>> {
+  BackgroundColor #8c8c8c
+  FontColor #ffffff
+  BorderColor #626262
+  shadowing false
+}
+skinparam person<<Turista>> {
+  BackgroundColor #0b3d62
+  FontColor #ffffff
+  BorderColor #072a44
+  shadowing false
+}
+skinparam rectangle<<WhatsAppBusiness>> {
+  BackgroundColor #8c8c8c
+  FontColor #ffffff
+  BorderColor #626262
+  shadowing false
+}
+
+person "==Turista\n<size:10>[Person]</size>\n\nVisitante que busca tours al valle del Colca, reserva una salida y la paga en línea." <<Turista>> as Turista
+rectangle "==Pasarela de pagos\n<size:10>[Software System]</size>\n\nProcesa pagos con tarjeta y billetera móvil; custodia los datos de tarjeta." <<Pasareladepagos>> as Pasareladepagos
+rectangle "==WhatsApp Business\n<size:10>[Software System]</size>\n\nEntrega mensajes al celular de los guías." <<WhatsAppBusiness>> as WhatsAppBusiness
+rectangle "==Sistema de AUTOCOLCA\n<size:10>[Software System]</size>\n\nEmite y valida el boleto turístico del Colca (supuesto didáctico: API HTTPS)." <<SistemadeAUTOCOLCA>> as SistemadeAUTOCOLCA
+person "==Operador de agencia\n<size:10>[Person]</size>\n\nPersonal de una agencia de Arequipa o Chivay que publica tours, fechas y cupos, y registra reservas." <<Operadordeagencia>> as Operadordeagencia
+person "==Guía de turismo\n<size:10>[Person]</size>\n\nAcompaña al grupo en el tour; recibe itinerario y lista de pasajeros por WhatsApp, sin entrar a la plataforma." <<Guíadeturismo>> as Guíadeturismo
+person "==Administrador del consorcio\n<size:10>[Person]</size>\n\nAprueba el registro de las agencias y revisa las ventas por agencia y por mes." <<Administradordelconsorcio>> as Administradordelconsorcio
+rectangle "==RutaColca\n<size:10>[Software System]</size>\n\nPlataforma del consorcio donde las agencias publican tours y los turistas los reservan y pagan en línea." <<RutaColca>> as RutaColca
+
+Turista .[#707070,thickness=2].> RutaColca : "<color:#707070>Busca, reserva y paga tours en\n<color:#707070><size:8>[HTTPS]</size>"
+Operadordeagencia .[#707070,thickness=2].> RutaColca : "<color:#707070>Publica tours y registra reservas en\n<color:#707070><size:8>[HTTPS]</size>"
+Administradordelconsorcio .[#707070,thickness=2].> RutaColca : "<color:#707070>Aprueba agencias y consulta ventas en\n<color:#707070><size:8>[HTTPS]</size>"
+RutaColca .[#707070,thickness=2].> Pasareladepagos : "<color:#707070>Cobra las reservas en\n<color:#707070><size:8>[HTTPS]</size>"
+RutaColca .[#707070,thickness=2].> SistemadeAUTOCOLCA : "<color:#707070>Valida el boleto turístico en\n<color:#707070><size:8>[HTTPS]</size>"
+SistemadeAUTOCOLCA .[#707070,thickness=2].> RutaColca : "<color:#707070>Retorna estado y vigencia del boleto turístico a\n<color:#707070><size:8>[HTTPS]</size>"
+RutaColca .[#707070,thickness=2].> WhatsAppBusiness : "<color:#707070>Envía itinerarios y listas de grupo mediante\n<color:#707070><size:8>[HTTPS]</size>"
+WhatsAppBusiness .[#707070,thickness=2].> Guíadeturismo : "<color:#707070>Entrega el itinerario y la lista del grupo a\n<color:#707070><size:8>[WhatsApp]</size>"
+@enduml

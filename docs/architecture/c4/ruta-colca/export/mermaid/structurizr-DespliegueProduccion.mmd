@@ -1,0 +1,56 @@
+graph LR
+  linkStyle default fill:#ffffff
+
+  subgraph diagram ["Diagrama de despliegue de RutaColca en producción"]
+    style diagram fill:#ffffff,stroke:#ffffff
+
+    subgraph 38 ["Celular del turista"]
+      style 38 fill:#ffffff,stroke:#888888,color:#000000
+
+      39["<div style='font-weight: bold'>Web del turista</div><div style='font-size: 70%; margin-top: 0px'>[Container: React (SPA)]</div><div style='font-size: 80%; margin-top:10px'>Búsqueda de tours, reserva de<br />una salida, registro del<br />boleto turístico y pago.</div>"]
+      style 39 fill:#0e7d73,stroke:#095750,color:#ffffff
+    end
+
+    subgraph 40 ["Tablet o PC de la agencia"]
+      style 40 fill:#ffffff,stroke:#888888,color:#000000
+
+      41["<div style='font-weight: bold'>Portal de agencias</div><div style='font-size: 70%; margin-top: 0px'>[Container: React (PWA)]</div><div style='font-size: 80%; margin-top:10px'>Publicación de tours, fechas<br />y cupos; reservas<br />presenciales; aprobación de<br />agencias y reportes de<br />ventas.</div>"]
+      style 41 fill:#0e7d73,stroke:#095750,color:#ffffff
+      42[("<div style='font-weight: bold'>Almacén local sin conexión</div><div style='font-size: 70%; margin-top: 0px'>[Container: IndexedDB (navegador)]</div><div style='font-size: 80%; margin-top:10px'>Reservas presenciales<br />pendientes de sincronizar,<br />guardadas en el dispositivo<br />de la agencia.</div>")]
+      style 42 fill:#b25e00,stroke:#7c4100,color:#ffffff
+    end
+
+    subgraph 44 ["Proveedor cloud"]
+      style 44 fill:#ffffff,stroke:#888888,color:#000000
+
+      45["<div style='font-weight: bold'>Balanceador de carga</div><div style='font-size: 70%; margin-top: 0px'>[Infrastructure Node: HTTPS (TLS)]</div><div style='font-size: 80%; margin-top:10px'>Termina TLS y reparte el<br />tráfico entre las réplicas de<br />la API.</div>"]
+      style 45 fill:#dddddd,stroke:#9a9a9a,color:#000000
+      subgraph 46 ["VM Ubuntu 24.04 (x2)"]
+        style 46 fill:#ffffff,stroke:#888888,color:#000000
+
+        subgraph 47 ["Docker"]
+          style 47 fill:#ffffff,stroke:#888888,color:#000000
+
+          48["<div style='font-weight: bold'>API de RutaColca</div><div style='font-size: 70%; margin-top: 0px'>[Container: Java 21, Spring Boot]</div><div style='font-size: 80%; margin-top:10px'>Reglas de negocio: tours,<br />cupos, reservas, validación<br />diferida del boleto, cobro y<br />envío de itinerarios.</div>"]
+          style 48 fill:#0e7d73,stroke:#095750,color:#ffffff
+        end
+
+      end
+
+      subgraph 52 ["PostgreSQL gestionado"]
+        style 52 fill:#ffffff,stroke:#888888,color:#000000
+
+        53[("<div style='font-weight: bold'>Base de datos</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL 16]</div><div style='font-size: 80%; margin-top:10px'>Agencias, tours, salidas,<br />cupos, reservas, ventas y<br />cola de validaciones<br />diferidas<br />(cola_validacion_boletos /<br />Transactional Outbox). No<br />guarda datos de tarjetas.</div>")]
+        style 53 fill:#0e7d73,stroke:#095750,color:#ffffff
+      end
+
+    end
+
+    41-. "<div>Guarda reservas pendientes en</div><div style='font-size: 70%'>[API IndexedDB]</div>" .->42
+    39-. "<div>Consulta tours y envía<br />reservas a</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->48
+    41-. "<div>Gestiona tours, cupos y<br />reservas en</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->48
+    41-. "<div>Sincroniza las reservas<br />hechas sin conexión con</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->48
+    48-. "<div>Lee y escribe datos en</div><div style='font-size: 70%'>[JDBC]</div>" .->53
+    48-. "<div>Persiste reservas pendientes<br />y encola tareas en<br />cola_validacion_boletos en</div><div style='font-size: 70%'>[JDBC]</div>" .->53
+    45-. "<div>Reparte el tráfico HTTPS<br />hacia</div><div style='font-size: 70%'>[HTTPS]</div>" .->48
+  end

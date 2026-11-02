@@ -1,0 +1,32 @@
+graph LR
+  linkStyle default fill:#ffffff
+
+  subgraph diagram ["Diagrama de contexto de RutaColca"]
+    style diagram fill:#ffffff,stroke:#ffffff
+
+    1["<div style='font-weight: bold'>Turista</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Visitante que busca tours al<br />valle del Colca, reserva una<br />salida y la paga en línea.</div>"]
+    style 1 fill:#0b3d62,stroke:#072a44,color:#ffffff
+    12["<div style='font-weight: bold'>Pasarela de pagos</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Procesa pagos con tarjeta y<br />billetera móvil; custodia los<br />datos de tarjeta.</div>"]
+    style 12 fill:#8c8c8c,stroke:#626262,color:#ffffff
+    13["<div style='font-weight: bold'>WhatsApp Business</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Entrega mensajes al celular<br />de los guías.</div>"]
+    style 13 fill:#8c8c8c,stroke:#626262,color:#ffffff
+    14["<div style='font-weight: bold'>Sistema de AUTOCOLCA</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Emite y valida el boleto<br />turístico del Colca (supuesto<br />didáctico: API HTTPS).</div>"]
+    style 14 fill:#8c8c8c,stroke:#626262,color:#ffffff
+    2["<div style='font-weight: bold'>Operador de agencia</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Personal de una agencia de<br />Arequipa o Chivay que publica<br />tours, fechas y cupos, y<br />registra reservas.</div>"]
+    style 2 fill:#0b3d62,stroke:#072a44,color:#ffffff
+    3["<div style='font-weight: bold'>Guía de turismo</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Acompaña al grupo en el tour;<br />recibe itinerario y lista de<br />pasajeros por WhatsApp, sin<br />entrar a la plataforma.</div>"]
+    style 3 fill:#0b3d62,stroke:#072a44,color:#ffffff
+    4["<div style='font-weight: bold'>Administrador del consorcio</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Aprueba el registro de las<br />agencias y revisa las ventas<br />por agencia y por mes.</div>"]
+    style 4 fill:#0b3d62,stroke:#072a44,color:#ffffff
+    5["<div style='font-weight: bold'>RutaColca</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Plataforma del consorcio<br />donde las agencias publican<br />tours y los turistas los<br />reservan y pagan en línea.</div>"]
+    style 5 fill:#1b5e8b,stroke:#124161,color:#ffffff
+
+    1-. "<div>Busca, reserva y paga tours<br />en</div><div style='font-size: 70%'>[HTTPS]</div>" .->5
+    2-. "<div>Publica tours y registra<br />reservas en</div><div style='font-size: 70%'>[HTTPS]</div>" .->5
+    4-. "<div>Aprueba agencias y consulta<br />ventas en</div><div style='font-size: 70%'>[HTTPS]</div>" .->5
+    5-. "<div>Cobra las reservas en</div><div style='font-size: 70%'>[HTTPS]</div>" .->12
+    5-. "<div>Valida el boleto turístico en</div><div style='font-size: 70%'>[HTTPS]</div>" .->14
+    14-. "<div>Retorna estado y vigencia del<br />boleto turístico a</div><div style='font-size: 70%'>[HTTPS]</div>" .->5
+    5-. "<div>Envía itinerarios y listas de<br />grupo mediante</div><div style='font-size: 70%'>[HTTPS]</div>" .->13
+    13-. "<div>Entrega el itinerario y la<br />lista del grupo a</div><div style='font-size: 70%'>[WhatsApp]</div>" .->3
+  end

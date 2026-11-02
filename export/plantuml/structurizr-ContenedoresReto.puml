@@ -1,0 +1,116 @@
+@startuml
+set separator none
+title Diagrama de contenedores de RutaColca con soporte sin conexión (HU-05)
+
+top to bottom direction
+
+skinparam {
+  arrowFontSize 10
+  defaultTextAlignment center
+  wrapWidth 200
+  maxMessageSize 100
+}
+
+hide stereotype
+
+skinparam rectangle<<RutaColca.APIdeRutaColca>> {
+  BackgroundColor #0e7d73
+  FontColor #ffffff
+  BorderColor #095750
+  shadowing false
+}
+skinparam person<<Administradordelconsorcio>> {
+  BackgroundColor #0b3d62
+  FontColor #ffffff
+  BorderColor #072a44
+  shadowing false
+}
+skinparam database<<RutaColca.Almacénlocalsinconexión>> {
+  BackgroundColor #b25e00
+  FontColor #ffffff
+  BorderColor #7c4100
+  shadowing false
+}
+skinparam database<<RutaColca.Basededatos>> {
+  BackgroundColor #0e7d73
+  FontColor #ffffff
+  BorderColor #095750
+  shadowing false
+}
+skinparam person<<Operadordeagencia>> {
+  BackgroundColor #0b3d62
+  FontColor #ffffff
+  BorderColor #072a44
+  shadowing false
+}
+skinparam rectangle<<Pasareladepagos>> {
+  BackgroundColor #8c8c8c
+  FontColor #ffffff
+  BorderColor #626262
+  shadowing false
+}
+skinparam rectangle<<RutaColca.Portaldeagencias>> {
+  BackgroundColor #0e7d73
+  FontColor #ffffff
+  BorderColor #095750
+  shadowing false
+}
+skinparam rectangle<<SistemadeAUTOCOLCA>> {
+  BackgroundColor #8c8c8c
+  FontColor #ffffff
+  BorderColor #626262
+  shadowing false
+}
+skinparam person<<Turista>> {
+  BackgroundColor #0b3d62
+  FontColor #ffffff
+  BorderColor #072a44
+  shadowing false
+}
+skinparam rectangle<<RutaColca.Webdelturista>> {
+  BackgroundColor #0e7d73
+  FontColor #ffffff
+  BorderColor #095750
+  shadowing false
+}
+skinparam rectangle<<WhatsAppBusiness>> {
+  BackgroundColor #8c8c8c
+  FontColor #ffffff
+  BorderColor #626262
+  shadowing false
+}
+skinparam rectangle<<RutaColca>> {
+  BorderColor #124161
+  FontColor #124161
+  shadowing false
+}
+
+person "==Turista\n<size:10>[Person]</size>\n\nVisitante que busca tours al valle del Colca, reserva una salida y la paga en línea." <<Turista>> as Turista
+person "==Operador de agencia\n<size:10>[Person]</size>\n\nPersonal de una agencia de Arequipa o Chivay que publica tours, fechas y cupos, y registra reservas." <<Operadordeagencia>> as Operadordeagencia
+person "==Administrador del consorcio\n<size:10>[Person]</size>\n\nAprueba el registro de las agencias y revisa las ventas por agencia y por mes." <<Administradordelconsorcio>> as Administradordelconsorcio
+rectangle "==Pasarela de pagos\n<size:10>[Software System]</size>\n\nProcesa pagos con tarjeta y billetera móvil; custodia los datos de tarjeta." <<Pasareladepagos>> as Pasareladepagos
+rectangle "==WhatsApp Business\n<size:10>[Software System]</size>\n\nEntrega mensajes al celular de los guías." <<WhatsAppBusiness>> as WhatsAppBusiness
+rectangle "==Sistema de AUTOCOLCA\n<size:10>[Software System]</size>\n\nEmite y valida el boleto turístico del Colca (supuesto didáctico: API HTTPS)." <<SistemadeAUTOCOLCA>> as SistemadeAUTOCOLCA
+
+rectangle "RutaColca\n<size:10>[Software System]</size>" <<RutaColca>> {
+  database "==Base de datos\n<size:10>[Container: PostgreSQL 16]</size>\n\nAgencias, tours, salidas, cupos, reservas, ventas y cola de validaciones diferidas (cola_validacion_boletos / Transactional Outbox). No guarda datos de tarjetas." <<RutaColca.Basededatos>> as RutaColca.Basededatos
+  database "==Almacén local sin conexión\n<size:10>[Container: IndexedDB (navegador)]</size>\n\nReservas presenciales pendientes de sincronizar, guardadas en el dispositivo de la agencia." <<RutaColca.Almacénlocalsinconexión>> as RutaColca.Almacénlocalsinconexión
+  rectangle "==Web del turista\n<size:10>[Container: React (SPA)]</size>\n\nBúsqueda de tours, reserva de una salida, registro del boleto turístico y pago." <<RutaColca.Webdelturista>> as RutaColca.Webdelturista
+  rectangle "==Portal de agencias\n<size:10>[Container: React (PWA)]</size>\n\nPublicación de tours, fechas y cupos; reservas presenciales; aprobación de agencias y reportes de ventas." <<RutaColca.Portaldeagencias>> as RutaColca.Portaldeagencias
+  rectangle "==API de RutaColca\n<size:10>[Container: Java 21, Spring Boot]</size>\n\nReglas de negocio: tours, cupos, reservas, validación diferida del boleto, cobro y envío de itinerarios." <<RutaColca.APIdeRutaColca>> as RutaColca.APIdeRutaColca
+}
+
+Turista .[#707070,thickness=2].> RutaColca.Webdelturista : "<color:#707070>Busca, reserva y paga tours en\n<color:#707070><size:8>[HTTPS]</size>"
+Operadordeagencia .[#707070,thickness=2].> RutaColca.Portaldeagencias : "<color:#707070>Publica tours y registra reservas en\n<color:#707070><size:8>[HTTPS]</size>"
+Administradordelconsorcio .[#707070,thickness=2].> RutaColca.Portaldeagencias : "<color:#707070>Aprueba agencias y consulta ventas en\n<color:#707070><size:8>[HTTPS]</size>"
+RutaColca.Webdelturista .[#707070,thickness=2].> RutaColca.APIdeRutaColca : "<color:#707070>Consulta tours y envía reservas a\n<color:#707070><size:8>[JSON/HTTPS]</size>"
+RutaColca.Portaldeagencias .[#707070,thickness=2].> RutaColca.APIdeRutaColca : "<color:#707070>Gestiona tours, cupos y reservas en\n<color:#707070><size:8>[JSON/HTTPS]</size>"
+RutaColca.APIdeRutaColca .[#707070,thickness=2].> RutaColca.Basededatos : "<color:#707070>Lee y escribe datos en\n<color:#707070><size:8>[JDBC]</size>"
+RutaColca.APIdeRutaColca .[#707070,thickness=2].> RutaColca.Basededatos : "<color:#707070>Persiste reservas pendientes y encola tareas en cola_validacion_boletos en\n<color:#707070><size:8>[JDBC]</size>"
+RutaColca.APIdeRutaColca .[#707070,thickness=2].> Pasareladepagos : "<color:#707070>Cobra las reservas en\n<color:#707070><size:8>[HTTPS]</size>"
+RutaColca.APIdeRutaColca .[#707070,thickness=2].> SistemadeAUTOCOLCA : "<color:#707070>Valida el boleto turístico en\n<color:#707070><size:8>[HTTPS]</size>"
+SistemadeAUTOCOLCA .[#707070,thickness=2].> RutaColca.APIdeRutaColca : "<color:#707070>Retorna estado y vigencia del boleto turístico a\n<color:#707070><size:8>[HTTPS]</size>"
+RutaColca.APIdeRutaColca .[#707070,thickness=2].> WhatsAppBusiness : "<color:#707070>Envía itinerarios y listas de grupo mediante\n<color:#707070><size:8>[HTTPS]</size>"
+RutaColca.Portaldeagencias .[#b25e00,thickness=2].> RutaColca.Almacénlocalsinconexión : "<color:#b25e00>Guarda reservas pendientes en\n<color:#b25e00><size:8>[API IndexedDB]</size>"
+RutaColca.Portaldeagencias .[#b25e00,thickness=2].> RutaColca.APIdeRutaColca : "<color:#b25e00>Sincroniza las reservas hechas sin conexión con\n<color:#b25e00><size:8>[JSON/HTTPS]</size>"
+@enduml

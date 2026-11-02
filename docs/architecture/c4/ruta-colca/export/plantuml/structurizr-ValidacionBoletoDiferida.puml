@@ -1,0 +1,85 @@
+@startuml
+set separator none
+title Diagrama dinámico: validación diferida de boletos ante caída de AUTOCOLCA (Escenario E5)
+
+left to right direction
+
+skinparam {
+  arrowFontSize 10
+  defaultTextAlignment center
+  wrapWidth 200
+  maxMessageSize 100
+}
+
+hide stereotype
+
+skinparam rectangle<<RutaColca.APIdeRutaColca>> {
+  BackgroundColor #0e7d73
+  FontColor #ffffff
+  BorderColor #095750
+  shadowing false
+}
+skinparam database<<RutaColca.Basededatos>> {
+  BackgroundColor #0e7d73
+  FontColor #ffffff
+  BorderColor #095750
+  shadowing false
+}
+skinparam rectangle<<Pasareladepagos>> {
+  BackgroundColor #8c8c8c
+  FontColor #ffffff
+  BorderColor #626262
+  shadowing false
+}
+skinparam rectangle<<SistemadeAUTOCOLCA>> {
+  BackgroundColor #8c8c8c
+  FontColor #ffffff
+  BorderColor #626262
+  shadowing false
+}
+skinparam person<<Turista>> {
+  BackgroundColor #0b3d62
+  FontColor #ffffff
+  BorderColor #072a44
+  shadowing false
+}
+skinparam rectangle<<RutaColca.Webdelturista>> {
+  BackgroundColor #0e7d73
+  FontColor #ffffff
+  BorderColor #095750
+  shadowing false
+}
+skinparam rectangle<<WhatsAppBusiness>> {
+  BackgroundColor #8c8c8c
+  FontColor #ffffff
+  BorderColor #626262
+  shadowing false
+}
+skinparam rectangle<<RutaColca>> {
+  BorderColor #124161
+  FontColor #124161
+  shadowing false
+}
+
+rectangle "RutaColca\n<size:10>[Software System]</size>" <<RutaColca>> {
+  database "==Base de datos\n<size:10>[Container: PostgreSQL 16]</size>\n\nAgencias, tours, salidas, cupos, reservas, ventas y cola de validaciones diferidas (cola_validacion_boletos / Transactional Outbox). No guarda datos de tarjetas." <<RutaColca.Basededatos>> as RutaColca.Basededatos
+  rectangle "==Web del turista\n<size:10>[Container: React (SPA)]</size>\n\nBúsqueda de tours, reserva de una salida, registro del boleto turístico y pago." <<RutaColca.Webdelturista>> as RutaColca.Webdelturista
+  rectangle "==API de RutaColca\n<size:10>[Container: Java 21, Spring Boot]</size>\n\nReglas de negocio: tours, cupos, reservas, validación diferida del boleto, cobro y envío de itinerarios." <<RutaColca.APIdeRutaColca>> as RutaColca.APIdeRutaColca
+}
+
+person "==Turista\n<size:10>[Person]</size>\n\nVisitante que busca tours al valle del Colca, reserva una salida y la paga en línea." <<Turista>> as Turista
+rectangle "==Pasarela de pagos\n<size:10>[Software System]</size>\n\nProcesa pagos con tarjeta y billetera móvil; custodia los datos de tarjeta." <<Pasareladepagos>> as Pasareladepagos
+rectangle "==WhatsApp Business\n<size:10>[Software System]</size>\n\nEntrega mensajes al celular de los guías." <<WhatsAppBusiness>> as WhatsAppBusiness
+rectangle "==Sistema de AUTOCOLCA\n<size:10>[Software System]</size>\n\nEmite y valida el boleto turístico del Colca (supuesto didáctico: API HTTPS)." <<SistemadeAUTOCOLCA>> as SistemadeAUTOCOLCA
+
+Turista .[#707070,thickness=2].> RutaColca.Webdelturista : "<color:#707070>1. 1. Envía solicitud de reserva con número de boleto turístico\n<color:#707070><size:8>[HTTPS]</size>"
+RutaColca.Webdelturista .[#707070,thickness=2].> RutaColca.APIdeRutaColca : "<color:#707070>2. 2. Envía la reserva para validación y procesamiento\n<color:#707070><size:8>[JSON/HTTPS]</size>"
+RutaColca.APIdeRutaColca .[#707070,thickness=2].> SistemadeAUTOCOLCA : "<color:#707070>3. 3. Intenta validar con AUTOCOLCA y detecta indisponibilidad (timeout / falla 5xx)\n<color:#707070><size:8>[HTTPS]</size>"
+RutaColca.APIdeRutaColca .[#707070,thickness=2].> RutaColca.Basededatos : "<color:#707070>4. 4. Reserva temporalmente el cupo (TTL 2h) y registra la validación en estado diferido (cola_validacion_boletos)\n<color:#707070><size:8>[JDBC]</size>"
+RutaColca.Webdelturista <.[#707070,thickness=2]. RutaColca.APIdeRutaColca : "<color:#707070>5. 5. Responde confirmando recepción en estado 'Pendiente de validación' (sin cobro monetario)\n<color:#707070><size:8>[JSON/HTTPS]</size>"
+RutaColca.APIdeRutaColca .[#707070,thickness=2].> SistemadeAUTOCOLCA : "<color:#707070>6. 6. Worker de validación diferida de la API reintenta periódicamente contra AUTOCOLCA con backoff exponencial\n<color:#707070><size:8>[HTTPS]</size>"
+SistemadeAUTOCOLCA .[#707070,thickness=2].> RutaColca.APIdeRutaColca : "<color:#707070>7. 7. Valida exitosamente el boleto turístico tras restablecimiento del servicio\n<color:#707070><size:8>[HTTPS]</size>"
+RutaColca.APIdeRutaColca .[#707070,thickness=2].> RutaColca.Basededatos : "<color:#707070>8. 8. Actualiza la reserva a estado VALIDADO y consolida el cupo\n<color:#707070><size:8>[JDBC]</size>"
+RutaColca.APIdeRutaColca .[#707070,thickness=2].> Pasareladepagos : "<color:#707070>9. 9. Ejecuta el cobro de la reserva confirmada en la pasarela (asegurando 0 cobros a boletos no válidos)\n<color:#707070><size:8>[HTTPS]</size>"
+RutaColca.APIdeRutaColca .[#707070,thickness=2].> WhatsAppBusiness : "<color:#707070>10. 10. Envía itinerario y confirmación de reserva al turista\n<color:#707070><size:8>[HTTPS]</size>"
+@enduml

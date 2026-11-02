@@ -1,0 +1,68 @@
+@startuml
+set separator none
+
+skinparam {
+  shadowing false
+  arrowFontSize 15
+  defaultTextAlignment center
+  wrapWidth 100
+  maxMessageSize 100
+}
+hide stereotype
+
+skinparam rectangle<<_transparent>> {
+  BorderColor transparent
+  BackgroundColor transparent
+  FontColor transparent
+}
+
+skinparam rectangle<<1>> {
+  BackgroundColor #0e7d73
+  FontColor #ffffff
+  BorderColor #095750
+}
+rectangle "==Container" <<1>>
+
+skinparam database<<2>> {
+  BackgroundColor #0e7d73
+  FontColor #ffffff
+  BorderColor #095750
+}
+database "==Container, Almacen" <<2>>
+
+skinparam database<<3>> {
+  BackgroundColor #b25e00
+  FontColor #ffffff
+  BorderColor #7c4100
+}
+database "==Container, Almacen, Reto" <<3>>
+
+skinparam rectangle<<4>> {
+  BackgroundColor #0e7d73
+  FontColor #ffffff
+  BorderColor #095750
+}
+rectangle "==Container, WebBrowser" <<4>>
+
+skinparam person<<5>> {
+  BackgroundColor #0b3d62
+  FontColor #ffffff
+  BorderColor #072a44
+}
+person "==Person" <<5>>
+
+skinparam rectangle<<6>> {
+  BackgroundColor #8c8c8c
+  FontColor #ffffff
+  BorderColor #626262
+}
+rectangle "==Software System, Externo" <<6>>
+
+rectangle "." <<_transparent>> as 7
+7 .[#707070,thickness=2].> 7 : "<color:#707070>Relationship"
+
+rectangle "." <<_transparent>> as 8
+8 .[#b25e00,thickness=2].> 8 : "<color:#b25e00>Reto"
+
+
+@enduml
